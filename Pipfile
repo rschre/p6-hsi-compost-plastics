@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+spectral = "*"
+pandas = "*"
+matplotlib = "*"
+scipy = "*"
+plotly = "*"
+black = "*"
+pyqt5 = "*"
+tensorflow = "*"
+sklearn = "*"
+ipykernel = "*"
+ipympl = "*"
+pydot = "*"
+graphviz = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
