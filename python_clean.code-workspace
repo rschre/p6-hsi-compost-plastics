@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.analysis.extraPaths": [ "D:/OneDriveFHNW/FHNW/EUT-P6bb-21HS-RS_M365 - General/python_clean" ]
+	}
+}
