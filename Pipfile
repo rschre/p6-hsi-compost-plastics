@@ -15,11 +15,8 @@ tensorflow = "*"
 sklearn = "*"
 ipykernel = "*"
 ipympl = "*"
-<<<<<<< HEAD
 pydot = "*"
 graphviz = "*"
-=======
->>>>>>> bf4aae35c9c040cfc58bba3c1dd374bb35ce8351
 
 [dev-packages]
 
