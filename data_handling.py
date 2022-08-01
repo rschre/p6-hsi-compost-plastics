@@ -252,3 +252,36 @@ def get_sample_plot(hsi_data: pd.DataFrame, sample_count: int, title=None, label
     sample_plot = hsi_data.sample(sample_count).T.plot.line(title=title, labels=labels)
 
     return sample_plot
+
+
+def msc_transform(input_data: np.array, reference: np.array = None):
+    """
+    :msc: "Multiplicative Scatter Corretion"
+    Either performed with given reference spectrum as parameter or using the mean of the dataset,
+    if no reference is provided.
+
+    :param input_data: np.array with spectral data. Columns for wavelengths, rows for pixels
+    :param reference: np.array with the reference-spectrum
+
+    :returns: data_msc (np.array): data transformed by msc
+    """
+
+    # Set type to float
+    input_data = np.array(input_data, dtype=np.float64)
+
+    # If reference is provided save it to the variable ref, otherwise use mean of dataset
+    reference_data = reference if reference is not None else np.mean(input_data, axis=0)
+
+    # Shift mean center to 0
+    for i in range(input_data.shape[0]):
+        input_data[i, :] -= input_data[i, :].mean()
+
+    # Create new array and fill it with msc-transformed data
+    data_msc = np.zeros_like(input_data)
+    for i in range(input_data.shape[0]):
+        # Least Squares Regression
+        fit = np.polyfit(reference_data[i], input_data[i, :], 1, full=True)
+        # Apply correction to data
+        data_msc[i, :] = (input_data[i, :] - fit[0][1]) / fit[0][0]
+
+    return data_msc
