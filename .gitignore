@@ -1,6 +1,7 @@
 # Non-Code Files
 raw_data/
 processed_data/
+plots/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
