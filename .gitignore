@@ -2,6 +2,7 @@
 raw_data/
 processed_data/
 plots/
+test/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
