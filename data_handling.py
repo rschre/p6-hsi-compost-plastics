@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import spectral
+from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 from matplotlib.widgets import Slider
 from scipy.signal import savgol_filter
@@ -14,7 +15,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def get_hsi_fullpath(data_folder):
+def get_hsi_fullpath(data_folder: str) -> spectral.SpyFile:
+    """Takes a local filesystem path to a folder of an ENVI-formatted HSI-capture.
+    Reads data according to the header and data file in the directory and returns a
+    spectral.SpyFile object, which handles accessing the file for the hyperspectral data.
+
+    :param data_folder string: path to the hsi folder
+
+    :returns spectral.SpyFile"""
     spectral.settings.envi_support_nonlowercase_params
     if os.path.exists(data_folder):
         capture_name = data_folder.split("\\")[-1]
@@ -28,9 +36,19 @@ def get_hsi_fullpath(data_folder):
 
 
 def get_hsi_capture(
-    capture_name,
-    data_folder="D:\\OneDriveFHNW\\FHNW\EUT-P6bb-21HS-RS_M365 - General\\captures",
-):
+    capture_name: str,
+    data_folder: str = "D:\\OneDriveFHNW\\FHNW\EUT-P6bb-21HS-RS_M365 - General\\captures",
+) -> spectral.SpyFile:
+    """
+    Searches the specified directory (not recursively) for a capture_name containing the string provided as parameter.
+    Warns if multiple are found and returns the full path of all that were found. If a single capture
+    matches the capture_name parameter, a SpyFile is returned.
+
+    :param data_folder string: path in which captures will be searched, not recursive
+    :capture_name string: The name of the capture to search for
+
+    :returns spectral.SpyFile
+    """
     captures = glob.glob(f"{data_folder}\\*{capture_name}*")
 
     if len(captures) == 1:
@@ -52,8 +70,15 @@ def get_hsi_capture(
         return None
 
 
-# flips the image horizontally so it's aligned like in real life
-def load_hsi_data(capture):
+def load_hsi_data(capture: spectral.SpyFile) -> spectral.image.ImageArray:
+    """
+    Loads data of the provided SpyFile into RAM and flips the image horizontally
+    to align with what you see in real-life.
+
+    :param capture spectral.SpyFile The image to load into RAM
+
+    :returns spectral.image.ImageArray
+    """
     return np.flip(capture.load(), axis=1)
 
 
@@ -67,17 +92,17 @@ def get_2d_roi(
     band_high=210,
 ) -> np.ndarray:
     """
-    Extracts a rectangular ROI of a given 3D-Array (HSI-Data) and returns it as a 2D-Array.
+    Extracts a rectangular ROI of a given ImageArray (3D HSI-Data) and returns it as a 2D-Array.
 
-    :param hsi_data: 3D-Array of HSI-Data
-    :param x_low: Leftmost Pixel of ROI on x-axis
-    :param x_high: Rightmost Pixel of ROI on x-axis
-    :param y_low: Top Pixel of ROI on y-axis
-    :param y_high: Bottom Pixel of ROI on y-axis
-    :param band_low: Lower wavelength bound of ROI
-    :param band_high: Upper wavelength bound of ROI
+    :param hsi_data spectral.image.ImageArray: 3D-Array of HSI-Data
+    :param x_low int:       Leftmost Pixel of ROI on x-axis
+    :param x_high int:      Rightmost Pixel of ROI on x-axis
+    :param y_low int:       Top Pixel of ROI on y-axis
+    :param y_high int:      Bottom Pixel of ROI on y-axis
+    :param band_low int:    Lower wavelength bound of ROI
+    :param band_high int:   Upper wavelength bound of ROI
 
-    : return: 2D-Array of ROI
+    :returns: 2D-Array of ROI
     """
 
     data = hsi_data[y_low:y_high, x_low:x_high, band_low:band_high]
@@ -88,11 +113,23 @@ def get_2d_roi(
 
 
 ## here for backwards comatibility, but limit_reflectance makes more sense
-def limit_reflection(data, threshold=8500):
+def limit_reflection(
+    data: spectral.image.ImageArray, threshold: int = 8500
+) -> spectral.image.ImageArray:
     return np.where(data > threshold, threshold, data)
 
 
-def limit_reflecance(data, threshold=8500):
+def limit_reflecance(
+    data: spectral.image.ImageArray, threshold: int = 8500
+) -> spectral.image.ImageArray:
+    """When there are high outliers in reflectance data, barely anything can be seen in false-rgb images.
+    This function sets any reflectance higher than 8500 to 8500 (or the specified threshold).
+    Example: spectral.imshow(limit_reflectance(spectral.image.ImageArray), rgb_bands)
+
+    :param data spectral.image.ImageArray: Image to process
+    :param thresholt int: maximum allowed reflectance
+
+    returns spectral.image.ImageArray"""
     return np.where(data > threshold, threshold, data)
 
 
@@ -104,7 +141,7 @@ def display_roi_rectangle(
     y_high: int,
     rgb_band_indexes=(81, 131, 181),
     title="Selected ROI",
-):
+) -> spectral.graphics.spypylab.ImageView:
     """
     Displays a rectangular ROI of the HSI-Data in a given figure.
 
@@ -130,7 +167,7 @@ def display_roi_rectangle(
     return view_roi
 
 
-def snv_transform(input_data):
+def snv_transform(input_data: np.ndarray) -> np.ndarray:
     """
     :snv: Standard Normal Variate Transformation:
     A correction technique which is done on each
@@ -138,10 +175,9 @@ def snv_transform(input_data):
     required. Subtracts the mean of every single spectrum (row) and divides
     by its standard deviation
 
-    :param input_data: Array of spectral data, wavelengths as columns, pixels as rows
-    :type input_data: DataFrame
+    :param input_data np.ndarray: Array of spectral data, wavelengths as columns, pixels as rows
 
-    :returns: df_snv (DataFrame): Scatter corrected spectra
+    :returns: df_snv (np.ndarray): Scatter corrected spectra
     """
     if isinstance(input_data, pd.DataFrame):
         cols = input_data.columns
@@ -164,7 +200,9 @@ def snv_transform(input_data):
         return data_snv
 
 
-def remove_outliers(hsi_data_2d, z_score_threshold=3, summary=False):
+def remove_outliers(
+    hsi_data_2d: pd.DataFrame, z_score_threshold: float = 3, summary: bool = False
+) -> pd.DataFrame:
     """
     :param data_df: Dataframe of which outliers will be removed. pixels as rows, wavelength as columns
     :type data_df: DataFrame
@@ -185,13 +223,15 @@ def remove_outliers(hsi_data_2d, z_score_threshold=3, summary=False):
     return hsi_data_2d.drop(outliers)
 
 
-def get_variable_savgol_plot(data: pd.DataFrame):
+def get_variable_savgol_plot(data: pd.DataFrame) -> Figure:
     """Takes a pandas dataframe in which the column names are the values for the x-axis
     (usually wavelengths) and the rows of the dataframe are spectras. The spectra and
     the spectra transformed using Savitzky-Golay-Filter are plotted. The plot displays a slider,
     which allows to adjust the polyorder and window_length of the savgol filter.
 
     :param data: a pandas dataframe containing spectral data
+
+    :returns matplotlib.figure.Figure: A plot using matplotlib
     """
 
     # Initial x and y arrays
@@ -300,7 +340,12 @@ def msc_transform(input_data: np.array, reference: np.array = None):
     return data_msc
 
 
-def get_mean_plot(hsi_data_2d, column_names, title="Mean Spectrum", labels=None):
+def get_mean_plot(
+    hsi_data_2d: np.ndarray,
+    column_names: list,
+    title: str = "Mean Spectrum",
+    labels: dict = None,
+):
     df = pd.DataFrame(hsi_data_2d, columns=column_names)
     return df.mean().plot(labels=labels, title=title)
 
