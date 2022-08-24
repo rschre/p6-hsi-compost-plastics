@@ -119,7 +119,7 @@ def limit_reflection(
     return np.where(data > threshold, threshold, data)
 
 
-def limit_reflecance(
+def limit_reflectance(
     data: spectral.image.ImageArray, threshold: int = 8500
 ) -> spectral.image.ImageArray:
     """When there are high outliers in reflectance data, barely anything can be seen in false-rgb images.
@@ -141,7 +141,7 @@ def display_roi_rectangle(
     y_high: int,
     rgb_band_indexes=(81, 131, 181),
     title="Selected ROI",
-) -> spectral.graphics.spypylab.ImageView:
+) -> spectral.ImageView:
     """
     Displays a rectangular ROI of the HSI-Data in a given figure.
 
